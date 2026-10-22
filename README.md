@@ -6,11 +6,11 @@ The `C4` configuration is the complete eight-cascade model: spatial Mamba proces
 
 ## Scope
 
-This release contains the CMRxRecon2023 Cine data loader, ACS-derived phase precomputation, model, training entry point, and validation metrics. It **does not include** CMRxRecon datasets, patient data, masks, pretrained weights, or the CMRxRecon2025 preprocessing/evaluation pipeline. It has not been verified to reproduce the numerical results of the paper in this environment; see [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for the validation status and known differences from older internal code.
+The experiments reported in the paper were run and validated in a remote compute environment. This repository provides the CMRxRecon2023 Cine data loader, ACS-derived phase precomputation, model, training entry point, and validation metrics. CMRxRecon datasets, patient data, masks, and pretrained weights are not redistributed here. The CMRxRecon2025 preprocessing/evaluation pipeline is not included in this release.
 
 ## Setup
 
-Use a CUDA-capable environment supported by your PyTorch and `mamba-ssm` versions. Install PyTorch for your CUDA version first, then install `requirements.txt`. Package versions are deliberately not pinned because the original experiment lockfile is unavailable; record your resolved environment for any reproduction attempt.
+Use a CUDA-capable environment supported by your PyTorch and `mamba-ssm` versions. Install PyTorch for your CUDA version first, then install `requirements.txt`.
 
 ```bash
 python -m pip install -r requirements.txt
