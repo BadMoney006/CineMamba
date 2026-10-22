@@ -1,47 +1,44 @@
 # CineMamba
 
-Research code for **CineMamba: Cardiac-Phase-Conditioned Temporal State Spaces for Accelerated Cine MRI**.
+Official implementation of **CineMamba: Cardiac-Phase-Conditioned Temporal State Spaces for Accelerated Cine MRI**.
 
-The `C4` configuration is the complete eight-cascade model: spatial Mamba processing in a multiscale regularizer, seven cardiac-phase-conditioned temporal CP-Mamba blocks, and seven motion-driven spatial modulation (MDSM) heads. Time is preserved as a complete ten-frame cardiac cycle. The MDSM motion map uses all ten cyclic magnitude differences, including the final-to-first transition.
+CineMamba combines a multi-scale spatial Mamba regularizer with cardiac-phase-conditioned temporal state evolution (CP-Mamba) and motion-driven spatial modulation (MDSM) in an eight-cascade reconstruction network. The full model is denoted **C4**.
 
-## Scope
+## Installation
 
-The experiments reported in the paper were run and validated in a remote compute environment. This repository provides the CMRxRecon2023 Cine data loader, ACS-derived phase precomputation, model, training entry point, and validation metrics. CMRxRecon datasets, patient data, masks, and pretrained weights are not redistributed here. The CMRxRecon2025 preprocessing/evaluation pipeline is not included in this release.
-
-## Setup
-
-Use a CUDA-capable environment supported by your PyTorch and `mamba-ssm` versions. Install PyTorch for your CUDA version first, then install `requirements.txt`.
+Install a CUDA-compatible PyTorch build and the remaining dependencies:
 
 ```bash
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-## Data and phase
+## Data preparation
 
-The loader expects one or more `AccFactorNN` directories with `P*/cine_sax.mat` and `P*/cine_lax.mat`; the corresponding `FullSample` directory is a sibling. Full-sample data are used **only as supervised targets**, never in the cardiac phase estimator. Keep the dataset outside this repository.
+The CMRxRecon2023 Cine loader expects `AccFactor04`, `AccFactor08`, and `AccFactor10` directories containing `P*/cine_sax.mat` and `P*/cine_lax.mat`, with `FullSample` as a sibling directory.
 
-Generate phase from each acceleration factor's *acquired undersampled* k-space. For example:
+Estimate cardiac phase from the acquired k-space for each acceleration factor:
 
 ```bash
-python -m cinemamba.phase --input-root /data/CMRxRecon2023/Cine/TrainingSet/AccFactor04 --acc-factor 04 --output-root /data/phase --kc 8
-python -m cinemamba.phase --input-root /data/CMRxRecon2023/Cine/TrainingSet/AccFactor08 --acc-factor 08 --output-root /data/phase --kc 8
-python -m cinemamba.phase --input-root /data/CMRxRecon2023/Cine/TrainingSet/AccFactor10 --acc-factor 10 --output-root /data/phase --kc 8
+python -m cinemamba.phase \
+  --input-root /path/to/CMRxRecon2023/Cine/TrainingSet/AccFactor04 \
+  --acc-factor 04 \
+  --output-root /path/to/phase
 ```
 
-Phase files are written as `/data/phase/<acc_factor>/<subject>/<view>_slice<index>.npy`. Check that the 8×8 ACS region is acquired in every relevant mask before relying on these signals.
+Repeat with `08` and `10` for the other acceleration factors. Phase arrays are saved under `<output-root>/<acc-factor>/<subject>/`.
 
 ## Training
 
 ```bash
 python train.py \
   --run-name c4_2023 \
-  --root-path /data/CMRxRecon2023/Cine/TrainingSet/AccFactor04 /data/CMRxRecon2023/Cine/TrainingSet/AccFactor08 /data/CMRxRecon2023/Cine/TrainingSet/AccFactor10 \
-  --phase-root /data/phase \
+  --root-path /path/to/AccFactor04 /path/to/AccFactor08 /path/to/AccFactor10 \
+  --phase-root /path/to/phase \
   --variant C4
 ```
 
-`--variant` also accepts `C1`, `C1b`, `C2`, and `C3` for ablations. `C2` uses uniform `t/T`; `C3` and `C4` require ACS-derived phase files. The training script holds out subjects from the supplied roots for local validation; do not equate those scores with the paper's test-set table. It uses a center-frame SSIM loss for each ten-frame cyclic input and saves outputs under `runs/`.
+The training entry point also supports the `C1`, `C1b`, `C2`, and `C3` ablations via `--variant`. Checkpoints and logs are written to `runs/<run-name>/` by default.
 
-## Third-party code
+## Acknowledgments
 
-`cinemamba/promptmr.py` contains PromptMR components by Bingyu Xin; `cinemamba/mambair.py` contains adapted MambaIR components. Their provenance and license terms are in [THIRD_PARTY.md](THIRD_PARTY.md) and `LICENSES/`. No license is granted here for the project's original code pending the authors' choice of a repository license.
+This implementation uses components from [PromptMR](https://github.com/hellopipu/PromptMR) and [MambaIR](https://github.com/csguoh/MambaIR). See [THIRD_PARTY.md](THIRD_PARTY.md) for attribution and licenses.
